@@ -8,11 +8,16 @@ from datetime import datetime, timedelta
 import os
 import pandas as pd
 import pickle as pkl
-current_dir = os.getcwd()
-os.chdir('./../ApiCiq')
+
+# local packages
+user = os.getlogin()
+quantpath = f'C:/Users/{user}/larrainvial.com/Equipo Quant - Documentos/Area Estrategias Cuantitativas 2.0/Codigos/'
+sys.path.insert(0, quantpath + 'ApiCiq')
 from apicapitaliq import ApiCapitalIQ
-os.chdir('./../Tables')
+sys.path.insert(0, quantpath + 'Tables')
 import tables
+
+current_dir = os.getcwd()
 os.chdir(current_dir)
 
 # Create Api object

@@ -9,20 +9,24 @@ import os
 import sys
 import pandas as pd
 import pickle as pkl
-current_dir = os.getcwd()
-#os.chdir('../ApiCiq')
-sys.path.insert(0, '../ApiCiq')
+
+
+# local packages
+user = os.getlogin()
+quantpath = f'C:/Users/{user}/larrainvial.com/Equipo Quant - Documentos/Area Estrategias Cuantitativas 2.0/Codigos/'
+sys.path.insert(0, quantpath + 'ApiCiq')
 from apicapitaliq import ApiCapitalIQ
-#os.chdir('../Tables')
-sys.path.insert(0, '../Tables')
+sys.path.insert(0, quantpath + 'Tables')
 import tables
+
+current_dir = os.getcwd()
 os.chdir(current_dir)
 
 # Get Mongo Collection object
 eq = tables.EquityMaster()
 keys = eq.get_keys()
 key2_ls = eq.distinct('country')
-res_query = eq.query(expand=False,  start="2019", end="2020")
+#res_query = eq.query(expand=False,  start="2019", end="2020")
 print(keys)
 print(key2_ls)
-print(res_query)
+#print(res_query)
