@@ -69,9 +69,6 @@ quarter = fields.loc[fields['Periodicidad'] == 'Trimestral',
                      'Campo_consulta']
 daily = fields.loc[fields['Periodicidad'] == 'Diaria',
                    'Campo_consulta']
-# daily_fields = {field: 'Valor' for field in daily}
-# quarter_fields = {field: 'ValorTexto' if field == 'IQ_FILINGDATE_IS'
-#                   else 'Valor' for field in quarter}
 daily_fields = daily.tolist()
 quarter_fields = quarter.tolist()
 print("d:", len(daily_fields))
@@ -87,7 +84,7 @@ except FileNotFoundError:
 # Download Data from CIQ for all companies
 for i, isin in enumerate(companies['ISIN']):
     if i > last_i:
-        if i % 1 == 0:
+        if i % 25 == 0:
             print('{}. Consultando para {}'.format(i, isin))
         companie_info = companies.loc[companies['ISIN'] == isin]
         id_q = companie_info.index.item()
@@ -113,8 +110,7 @@ for i, isin in enumerate(companies['ISIN']):
             pkl.dump(response_d, file)    
         # Save current state
         with open(dbpath + 'temp/save_update_state.pkl', 'wb') as file:
-            pkl.dump(i, file)
-        break        
+            pkl.dump(i, file)    
 
 
 
@@ -126,15 +122,13 @@ def create_key(company, currency, field):
     ind_sector = company['Industry_Sector']
     ind_group = company['Industry_Group']
     ind_industry = company['Industry']
-    ind_internal = company['Internal_industry']
+    ind_internal = company['Internal_industry']a
     ind_esg = company['ESG_Industry']
     
     return '.'.join([country, currency, asset, investible, ind_sector,
                      ind_group, ind_industry, ind_internal, ind_esg,
                      field])
 
-#print(companies.loc[companies['ISIN'] == "ARP9028N1016"].index.item())
-#get_update_properties(str(companies.loc[20, :].name), "Local", daily_fields)
 
 # Get Mongo Collection object
 eq = tables.EquityMaster()
@@ -192,8 +186,6 @@ for id_q, company in companies.iterrows():
             if len(rows) != 0:
                 series = pd.Series(rows)
                 series.name = create_key(company, currency, field)
-                #print(series.name)
-                #print(series)
                 df.append(series)
             else:
                 logs += 'ID {} tiene error en campo {} con currency {}, puede ser "CapabilityNeeded \n'.format(id_q, field, currency)
@@ -204,4 +196,3 @@ for id_q, company in companies.iterrows():
         pkl.dump(id_q, file)
     with open(dbpath + 'temp/update_logs.txt', 'w') as file:
         file.write(logs)
-    break    
