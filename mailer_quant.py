@@ -4,16 +4,16 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
+import os 
 
 class Mailer():
 
-    def __init__(self):
-        self.subject = "An email with attachment from Python"
-        self.body = f"This is email was scheduled to be generated automatically from Python Alexa script at {datetime.now()}"
-        self.sender_email = "lv.quant.team@gmail.com"
-        self.receiver_email = "fpaniagua@larrainvial.com"
-        self.password = "Larra2020"
+    def __init__(self, subject, body, reciber):
+        self.subject = subject
+        self.body = body
+        self.sender_email = os.environ.get('EMAiL_SENDER')
+        self.receiver_email = reciber
+        self.password = os.environ.get('EMAiL_PASSWORD')
         self.message = None
 
     def create_message(self, filename):
