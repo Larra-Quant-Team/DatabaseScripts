@@ -51,7 +51,7 @@ api = ApiCapitalIQ()
 # Load Companies
 dbpath = './files/'
 companies = pd.read_excel(dbpath + 'Company_Base_Definitivo.xlsx',
-                          sheet_name='Compilado')
+                          sheet_name='Compilado',  engine='openpyxl')
 companies.set_index('ID_Quant', inplace=True)
 companies.sort_index(inplace=True)
 # Filter companies that aren't investable
@@ -59,7 +59,7 @@ companies = companies.loc[companies['Invertible'] == 1]
 
 # Load CIQ Fields
 
-fields = pd.read_excel(dbpath + 'Campos_SyP.xlsx')
+fields = pd.read_excel(dbpath + 'Campos_SyP.xlsx',  engine='openpyxl')
 fields = fields.loc[:, ['Campo_consulta', 'Periodicidad']]
 quarter = fields.loc[fields['Periodicidad'] == 'Trimestral',
                      'Campo_consulta']
