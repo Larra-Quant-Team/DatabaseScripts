@@ -11,12 +11,8 @@ import pickle as pkl
 import sys
 
 # local packages
-user = os.getlogin()
-quantpath = f'C:/Users/{user}/larrainvial.com/Equipo Quant - Documentos/Area Estrategias Cuantitativas 2.0/'
-sys.path.insert(0, quantpath + 'Codigos/' + 'ApiCiq')
-from apicapitaliq import ApiCapitalIQ
-sys.path.insert(0, quantpath + 'Codigos/' + 'Tables')
-import tables
+from modules.apiciq.apicapitaliq import ApiCapitalIQ
+from modules.tables import tables
 
 current_dir = os.getcwd()
 os.chdir(current_dir)
@@ -53,7 +49,7 @@ def get_update_properties(asset, currency, fields):
 api = ApiCapitalIQ()
 
 # Load Companies
-dbpath = quantpath + 'BDD/Reportafoleos/'
+dbpath = './files/'
 companies = pd.read_excel(dbpath + 'Company_Base_Definitivo.xlsx',
                           sheet_name='Compilado')
 companies.set_index('ID_Quant', inplace=True)
@@ -113,7 +109,6 @@ for i, isin in enumerate(companies['ISIN']):
             pkl.dump(i, file)    
 
 
-
 def create_key(company, currency, field):
     company[company.isna()] = 'null'
     country = company['Country']
@@ -122,7 +117,7 @@ def create_key(company, currency, field):
     ind_sector = company['Industry_Sector']
     ind_group = company['Industry_Group']
     ind_industry = company['Industry']
-    ind_internal = company['Internal_industry']a
+    ind_internal = company['Internal_industry']
     ind_esg = company['ESG_Industry']
     
     return '.'.join([country, currency, asset, investible, ind_sector,

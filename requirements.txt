@@ -1,0 +1,13 @@
+pandas
+matplotlib
+numpy
+selenium
+nltk
+requests
+bs4
+xlrd>=1.2.0
+openpyxl
+dnspython==2.0.0
+pymongo==3.11.2
+datetime
+wheel>=0.36.1

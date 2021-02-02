@@ -1,0 +1,11 @@
+ID 1 tiene error en campo IQ_ST_DEBT con currency Local, puede ser "CapabilityNeeded 
+ID 1 tiene error en campo IQ_DIV_SHARE con currency Local, puede ser "CapabilityNeeded 
+ID 1 tiene error en campo IQ_SPECIAL_DIV_SHARE con currency Local, puede ser "CapabilityNeeded 
+ID 1 tiene error en campo IQ_INT_BEARING_DEPOSITS con currency Local, puede ser "CapabilityNeeded 
+ID 1 tiene error en campo IQ_SUB_BONDS_NOTES con currency Local, puede ser "CapabilityNeeded 
+ID 1 tiene error en campo IQ_EST_REV_DIFF_CIQ con currency Local
+InvalidEntry 
+ID 1 tiene error en campo IQ_EST_EBITDA_DIFF_CIQ con currency Local
+InvalidEntry 
+ID 1 tiene error en campo IQ_EST_EPS_DIFF_CIQ con currency Local
+InvalidEntry 
