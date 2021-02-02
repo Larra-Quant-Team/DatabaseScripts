@@ -107,6 +107,8 @@ for i, isin in enumerate(companies['ISIN']):
         # Save current state
         with open(dbpath + 'temp/save_update_state.pkl', 'wb') as file:
             pkl.dump(i, file)    
+        break    
+
 
 
 def create_key(company, currency, field):
@@ -191,3 +193,4 @@ for id_q, company in companies.iterrows():
         pkl.dump(id_q, file)
     with open(dbpath + 'temp/update_logs.txt', 'w') as file:
         file.write(logs)
+    break    
