@@ -8,15 +8,16 @@ import os
 
 class Mailer():
 
-    def __init__(self, subject, body, reciber):
+    def __init__(self, subject, body, html, reciber):
         self.subject = subject
         self.body = body
-        self.sender_email = os.environ.get('EMAiL_SENDER')
+        self.html = html
+        self.sender_email = os.environ.get('EMAIL_SENDER')
         self.receiver_email = reciber
-        self.password = os.environ.get('EMAiL_PASSWORD')
+        self.password = os.environ.get('EMAIL_PASSWORD')
         self.message = None
 
-    def create_message(self, filename):
+    def create_message(self, filepath, filename):
         # Create a multipart message and set headers
         message = MIMEMultipart()
         message["From"] = self.sender_email
@@ -25,12 +26,13 @@ class Mailer():
         message["Bcc"] = self.receiver_email  # Recommended for mass emails
 
         # Add body to email
-        message.attach(MIMEText(self.body, "plain"))
+        #message.attach(MIMEText(self.body, "plain"))
+        message.attach(MIMEText(self.html, "html"))
 
         #filename = "test.pdf"  # In same directory as script
 
         # Open PDF file in binary mode
-        with open(filename, "rb") as attachment:
+        with open(filepath, "rb") as attachment:
             # Add file as application/octet-stream
             # Email client can usually download this automatically as attachment
             part = MIMEBase("application", "octet-stream")
