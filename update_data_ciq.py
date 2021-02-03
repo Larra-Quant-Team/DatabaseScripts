@@ -130,6 +130,8 @@ for i, isin in enumerate(companies['ISIN']):
         logs[i+1] = {"CIQ" : {"quarter" : ciq_q_log, "daly properties": properties_d,
                      "quarter properties": properties_q},
                      "fields": {}}
+        if i+1 == 3:
+            break    
 
 
 def create_key(company, currency, field):
@@ -217,6 +219,8 @@ for id_q, company in companies.iterrows():
     eq.update_values(df, keys)
     with open(dbpath + 'temp/save_update_state_load.pkl', 'wb') as file:
         pkl.dump(id_q, file)   
+    if id_q == 3:
+        break  
 
 with open(dbpath + 'temp/update_logs.json', 'w') as file:
         json.dump(logs, file)     
