@@ -51,7 +51,7 @@ class HtmlConverter:
         <body>
             <p>Hola,<br>
                 Este email se ah generado automáticamente como reporte de la actualización de base de datos mongo
-                ocurrida entre {self.intial_date} y {self.final_date}. A continuación se encuentra un resumen del 
+                ocurrida entre {self.intial_date} y {self.final_date} (UTC). A continuación se encuentra un resumen del 
                 log adjunto. <br>
                 Se ha consultado por {self.a_d_fields + self.a_q_fields} campos, distribuidos entre:<br>
                 <ul>

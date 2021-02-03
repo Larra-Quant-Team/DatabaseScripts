@@ -129,9 +129,7 @@ for i, isin in enumerate(companies['ISIN']):
         ciq_q_log["Time Dump"] = end_time_dump_q - end_time_request_q
         logs[i+1] = {"CIQ" : {"quarter" : ciq_q_log, "daly properties": properties_d,
                      "quarter properties": properties_q},
-                     "fields": {}}
-        if i+1 == 3:
-            break    
+                     "fields": {}} 
 
 
 def create_key(company, currency, field):
@@ -219,8 +217,6 @@ for id_q, company in companies.iterrows():
     eq.update_values(df, keys)
     with open(dbpath + 'temp/save_update_state_load.pkl', 'wb') as file:
         pkl.dump(id_q, file)   
-    if id_q == 3:
-        break  
 
 with open(dbpath + 'temp/update_logs.json', 'w') as file:
         json.dump(logs, file)     
@@ -236,3 +232,4 @@ mail_html = html_parser.get_html()
 mailer = Mailer("[Acutalización tabla EquityMaster]", mail_msg, mail_html, "fpaniagua@larrainvial.com")
 mailer.create_message("./files/temp/update_logs.json", "update_log.json")
 mailer.send_message("fpaniagua@larrainvial.com")
+mailer.send_message("Aback@larrainvial.com")
