@@ -22,16 +22,16 @@ current_dir = os.getcwd()
 os.chdir(current_dir)
 
 
-def get_update_properties(asset, currency, fields, type):
-    eq = tables.EquityMaster(currency=currency, asset=asset)
-    last_update = eq.last_update()
+def get_update_properties(asset, last_update_info, fields, type, currency):
+    #last_update = last_update_info.loc[last_update_info["asset"] == asset]
     properties = {}
     for mnemonic in fields:
         # In the case mnemonic field has never been updated in the Database, the query start at 2010
         #print(mnemonic)
         start = datetime(2010, 1, 1)
         start_str = start.strftime('%Y-%m-%d')
-        mnemonic_last_update = last_update.loc[last_update["field"] == mnemonic]
+        #print(last_update_info[mnemonic])
+        mnemonic_last_update = last_update_info[mnemonic].loc[last_update_info[mnemonic]["asset"] == asset]
         if mnemonic_last_update.shape[0] > 0:
             start = mnemonic_last_update.last_update.item()
             start_str = start.strftime('%Y-%m-%d')
@@ -88,6 +88,24 @@ except FileNotFoundError:
 logs = {}
 initial_date = datetime.today()
 program_start_time = time()
+
+# Get information about last update
+last_update_info = {}
+all_fields = quarter_fields + daily_fields
+broken_mnemonics = ["IQ_EST_REV_DIFF_CIQ", "IQ_SPECIAL_DIV_SHARE", "IQ_INT_BEARING_DEPOSITS", "IQ_SUB_BONDS_NOTES",
+                    "IQ_EST_EBITDA_DIFF_CIQ", "IQ_EST_EPS_DIFF_CIQ"]
+quarter_fields = list(filter(lambda x: not x in broken_mnemonics, quarter_fields))   
+daily_fields = list(filter(lambda x: not x in broken_mnemonics, daily_fields))           
+#print("----")
+#print(quarter_fields)
+#print(daily_fields)         
+for mnemonic in all_fields:    
+    print(f"descagando información del ultimo update de {mnemonic}")
+    if mnemonic in broken_mnemonics:
+        continue
+    eq = tables.EquityMaster(currency="Local", asset="1", field=mnemonic)
+    last_update_info[mnemonic] = eq.last_update()
+
 # Download Data from CIQ for all companies
 for i, isin in enumerate(companies['ISIN']):
     if i > last_i:
@@ -101,7 +119,7 @@ for i, isin in enumerate(companies['ISIN']):
         
         requests_q = []
         start_time_load_q = time()
-        properties_q = get_update_properties(str(id_q), "Local", quarter_fields, "quarter")
+        properties_q = get_update_properties(str(id_q), last_update_info, quarter_fields, "quarter", "Local")
         end_time_load_q = time()
         requests_q.extend([api.historical_value(isin, mnemonic, properties_q[mnemonic]["quarter"])
                           for mnemonic in quarter_fields])
@@ -112,7 +130,7 @@ for i, isin in enumerate(companies['ISIN']):
             pkl.dump(response_q, file)
         end_time_dump_q = time()    
         requests_d = []
-        properties_d = get_update_properties(str(id_q), "Local", daily_fields, "daily")
+        properties_d = get_update_properties(str(id_q), last_update_info, daily_fields, "daily",  "Local")
         #print(properties)
         requests_d.extend([api.historical_value(isin, mnemonic, properties_d[mnemonic]["daily"])
                           for mnemonic in daily_fields])
@@ -129,7 +147,7 @@ for i, isin in enumerate(companies['ISIN']):
         ciq_q_log["Time Dump"] = end_time_dump_q - end_time_request_q
         logs[id_q] = {"CIQ" : {"quarter" : ciq_q_log, "daly properties": properties_d,
                      "quarter properties": properties_q},
-                     "fields": {}} 
+                     "fields": {}}      
 
 
 def create_key(company, currency, field):
@@ -212,14 +230,18 @@ for id_q, company in companies.iterrows():
                 err = "1"
                 msg += 'ID {} tiene error en campo {} con currency {}, puede ser "CapabilityNeeded \n'.format(id_q, field, currency)
             logs[id_q]["fields"][field] = {"msg" : msg, "err": err}
+    
+    #print(f"estoy en id: {id_q}")
+    #print(df)
     df = pd.concat(df, axis=1)
     logs[id_q]["Updated fields"] = len(df.columns)
     eq.update_values(df, keys)
     with open(dbpath + 'temp/save_update_state_load.pkl', 'wb') as file:
         pkl.dump(id_q, file)   
-
-with open(dbpath + 'temp/update_logs.json', 'w') as file:
+    with open(dbpath + 'temp/update_logs.json', 'w') as file:
         json.dump(logs, file)     
+
+  
 
 program_end_time = time()
 final_date = datetime.today()
@@ -232,4 +254,4 @@ mail_html = html_parser.get_html()
 mailer = Mailer("[Acutalización tabla EquityMaster]", mail_msg, mail_html, "fpaniagua@larrainvial.com")
 mailer.create_message("./files/temp/update_logs.json", "update_log.json")
 mailer.send_message("fpaniagua@larrainvial.com")
-mailer.send_message("Aback@larrainvial.com")
+#mailer.send_message("Aback@larrainvial.com")
