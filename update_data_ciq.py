@@ -127,7 +127,7 @@ for i, isin in enumerate(companies['ISIN']):
         ciq_q_log["Time Last Update"] = end_time_load_q - start_time_load_q
         ciq_q_log["Time CIQ request"] = end_time_request_q - end_time_load_q
         ciq_q_log["Time Dump"] = end_time_dump_q - end_time_request_q
-        logs[i+1] = {"CIQ" : {"quarter" : ciq_q_log, "daly properties": properties_d,
+        logs[id_q] = {"CIQ" : {"quarter" : ciq_q_log, "daly properties": properties_d,
                      "quarter properties": properties_q},
                      "fields": {}} 
 
