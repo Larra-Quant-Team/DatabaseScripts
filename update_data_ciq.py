@@ -103,7 +103,7 @@ broken_mnemonics = ["IQ_EST_REV_DIFF_CIQ", "IQ_SPECIAL_DIV_SHARE", "IQ_INT_BEARI
 quarter_fields = list(filter(lambda x: not x in broken_mnemonics, quarter_fields))   
 daily_fields = list(filter(lambda x: not x in broken_mnemonics, daily_fields))       
 initial_last_update_time = time()
-for mnemonic in all_fields:    
+for mnemonic in daily_fields:    
     print(f"descagando información del ultimo update de {mnemonic}")
     if mnemonic in broken_mnemonics:
         continue
@@ -122,7 +122,7 @@ for i, isin in enumerate(companies['ISIN']):
         companie_info = companies.loc[companies['ISIN'] == isin]
         id_q = companie_info.index.item()
         # Create requests for each instrument
-        
+        '''
         requests_q = []
         properties_q = get_update_properties(str(id_q), last_update_info, quarter_fields, "quarter", "Local")
         requests_q.extend([api.historical_value(isin, mnemonic, properties_q[mnemonic]["quarter"])
@@ -131,6 +131,7 @@ for i, isin in enumerate(companies['ISIN']):
         with open(dbpath + 'temp/historical_quarter_update_response_{}.pkl'.format(id_q),
                   'wb') as file:
             pkl.dump(response_q, file)
+        '''
         requests_d = []
         start_time_load_q = time()
         properties_d = get_update_properties(str(id_q), last_update_info, daily_fields, "daily",  "Local")
@@ -152,7 +153,7 @@ for i, isin in enumerate(companies['ISIN']):
         ciq_q_log["Time CIQ request"] = end_time_request_q - end_time_load_q
         ciq_q_log["Time Dump"] = end_time_dump_q - end_time_request_q
         logs[id_q] = {"CIQ" : {"quarter" : ciq_q_log, "daly properties": properties_d,
-                     "quarter properties": properties_q},
+                     #"quarter properties": properties_q},
                      "fields": {}}             
 
 
@@ -188,6 +189,7 @@ for id_q, company in companies.iterrows():
         continue
     if id_q % 25 == 0:
         print('Vamos en el id {}'.format(id_q))
+    '''    
     with open(dbpath + 'temp/historical_quarter_update_response_{}.pkl'.format(id_q),
               'rb') as file:
         response_q = pkl.load(file)
@@ -195,6 +197,7 @@ for id_q, company in companies.iterrows():
             logs[id_q]["err"] = ('ID {} tiene status code {} para data quarter \n'
                     .format(id_q, response_q.status_code))
         response_q = response_q.json()
+    '''    
      
     with open(dbpath + 'temp/historical_update_response_{}.pkl'.format(id_q),
               'rb') as file:
@@ -205,7 +208,7 @@ for id_q, company in companies.iterrows():
         response_d = response_d.json()
     
     df = []
-    for res in [response_q, response_d]:
+    for res in response_d:
         for mnemo_data in res['GDSSDKResponse']:
             err = "0"
             field = mnemo_data['Mnemonic']
