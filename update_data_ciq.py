@@ -209,7 +209,7 @@ for id_q, company in companies.iterrows():
         response_d = response_d.json()
     
     df = []
-    for res in response_d:
+    for res in [response_d]:
         for mnemo_data in res['GDSSDKResponse']:
             err = "0"
             field = mnemo_data['Mnemonic']
