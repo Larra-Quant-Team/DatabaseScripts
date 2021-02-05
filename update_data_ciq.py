@@ -97,8 +97,20 @@ program_start_time = time()
 
 # Get information about last update
 last_update_info = {}
-with open(dbpath + 'last_update_info_dicc.pkl', 'rb') as file:
-        last_update_info = pkl.load(file)
+all_fields = quarter_fields + daily_fields
+broken_mnemonics = ["IQ_EST_REV_DIFF_CIQ", "IQ_SPECIAL_DIV_SHARE", "IQ_INT_BEARING_DEPOSITS", "IQ_SUB_BONDS_NOTES",
+                    "IQ_EST_EBITDA_DIFF_CIQ", "IQ_EST_EPS_DIFF_CIQ"]
+quarter_fields = list(filter(lambda x: not x in broken_mnemonics, quarter_fields))   
+daily_fields = list(filter(lambda x: not x in broken_mnemonics, daily_fields))       
+initial_last_update_time = time()
+for mnemonic in all_fields:    
+    print(f"descagando información del ultimo update de {mnemonic}")
+    if mnemonic in broken_mnemonics:
+        continue
+    eq = tables.EquityMaster(currency="Local", field=mnemonic)
+    last_update_info[mnemonic] = eq.last_update()
+print(f"tomo: {time()-initial_last_update_time}")
+
 
 # Download Data from CIQ for all companies
 for i, isin in enumerate(companies['ISIN']):
