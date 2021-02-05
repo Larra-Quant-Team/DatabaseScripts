@@ -25,7 +25,8 @@ class HtmlConverter:
         for companie in self.fields_info:
             self.fields_html += f"""<tr>
                                         <td> {companie['id']} </td>
-                                        <td> {companies.loc[companie['id']].Name} </td>
+                                        <td> {companies.loc[companie['id']]["Ticker Bloomberg"]} </td>
+                                        <td> {companies.loc[companie['id']].Industry_Sector} </td>
                                         <td> {companie['fields']} </td>
                                     </tr>"""
         return
@@ -77,7 +78,8 @@ class HtmlConverter:
             <table>
                 <tr>
                     <th> ID Quant </th>
-                    <th> Nombre </th> 
+                    <th> Ticker Bloomberg </th> 
+                    <th> Industry Sector </th> 
                     <th> Campos Actualizados </th>
                 </tr>
                 {self.fields_html}

@@ -74,6 +74,12 @@ daily = fields.loc[fields['Periodicidad'] == 'Diaria',
                    'Campo_consulta']
 daily_fields = daily.tolist()
 quarter_fields = quarter.tolist()
+
+broken_mnemonics = ["IQ_EST_REV_DIFF_CIQ", "IQ_SPECIAL_DIV_SHARE", "IQ_INT_BEARING_DEPOSITS", "IQ_SUB_BONDS_NOTES",
+                    "IQ_EST_EBITDA_DIFF_CIQ", "IQ_EST_EPS_DIFF_CIQ"]
+quarter_fields = list(filter(lambda x: not x in broken_mnemonics, quarter_fields))   
+daily_fields = list(filter(lambda x: not x in broken_mnemonics, daily_fields))  
+
 print("d:", len(daily_fields))
 print("q:", len(quarter_fields))
 
@@ -91,20 +97,8 @@ program_start_time = time()
 
 # Get information about last update
 last_update_info = {}
-all_fields = quarter_fields + daily_fields
-broken_mnemonics = ["IQ_EST_REV_DIFF_CIQ", "IQ_SPECIAL_DIV_SHARE", "IQ_INT_BEARING_DEPOSITS", "IQ_SUB_BONDS_NOTES",
-                    "IQ_EST_EBITDA_DIFF_CIQ", "IQ_EST_EPS_DIFF_CIQ"]
-quarter_fields = list(filter(lambda x: not x in broken_mnemonics, quarter_fields))   
-daily_fields = list(filter(lambda x: not x in broken_mnemonics, daily_fields))           
-#print("----")
-#print(quarter_fields)
-#print(daily_fields)         
-for mnemonic in all_fields:    
-    print(f"descagando información del ultimo update de {mnemonic}")
-    if mnemonic in broken_mnemonics:
-        continue
-    eq = tables.EquityMaster(currency="Local", asset="1", field=mnemonic)
-    last_update_info[mnemonic] = eq.last_update()
+with open(dbpath + 'last_update_info_dicc.pkl', 'rb') as file:
+        last_update_info = pkl.load(file)
 
 # Download Data from CIQ for all companies
 for i, isin in enumerate(companies['ISIN']):
@@ -118,36 +112,38 @@ for i, isin in enumerate(companies['ISIN']):
         # Create requests for each instrument
         
         requests_q = []
-        start_time_load_q = time()
         properties_q = get_update_properties(str(id_q), last_update_info, quarter_fields, "quarter", "Local")
-        end_time_load_q = time()
         requests_q.extend([api.historical_value(isin, mnemonic, properties_q[mnemonic]["quarter"])
                           for mnemonic in quarter_fields])
         response_q = api.sendRequest(requests_q)
-        end_time_request_q = time()
         with open(dbpath + 'temp/historical_quarter_update_response_{}.pkl'.format(id_q),
                   'wb') as file:
             pkl.dump(response_q, file)
-        end_time_dump_q = time()    
         requests_d = []
+        start_time_load_q = time()
         properties_d = get_update_properties(str(id_q), last_update_info, daily_fields, "daily",  "Local")
+        end_time_load_q = time()
         #print(properties)
         requests_d.extend([api.historical_value(isin, mnemonic, properties_d[mnemonic]["daily"])
                           for mnemonic in daily_fields])
         response_d = api.sendRequest(requests_d)
+        end_time_request_q = time()
         with open(dbpath + 'temp/historical_update_response_{}.pkl'.format(id_q),
                   'wb') as file:
             pkl.dump(response_d, file)    
         # Save current state
         with open(dbpath + 'temp/save_update_state.pkl', 'wb') as file:
             pkl.dump(i, file)    
+        end_time_dump_q = time()
         # logs
         ciq_q_log["Time Last Update"] = end_time_load_q - start_time_load_q
         ciq_q_log["Time CIQ request"] = end_time_request_q - end_time_load_q
         ciq_q_log["Time Dump"] = end_time_dump_q - end_time_request_q
         logs[id_q] = {"CIQ" : {"quarter" : ciq_q_log, "daly properties": properties_d,
                      "quarter properties": properties_q},
-                     "fields": {}}      
+                     "fields": {}}          
+        if id_q == 10:
+            break                
 
 
 def create_key(company, currency, field):
@@ -239,7 +235,9 @@ for id_q, company in companies.iterrows():
     with open(dbpath + 'temp/save_update_state_load.pkl', 'wb') as file:
         pkl.dump(id_q, file)   
     with open(dbpath + 'temp/update_logs.json', 'w') as file:
-        json.dump(logs, file)     
+        json.dump(logs, file)       
+    if id_q == 10:
+            break    
 
   
 
