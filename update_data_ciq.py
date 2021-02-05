@@ -122,6 +122,7 @@ for i, isin in enumerate(companies['ISIN']):
         companie_info = companies.loc[companies['ISIN'] == isin]
         id_q = companie_info.index.item()
         # Create requests for each instrument
+        properties_q = []
         '''
         requests_q = []
         properties_q = get_update_properties(str(id_q), last_update_info, quarter_fields, "quarter", "Local")
@@ -153,7 +154,7 @@ for i, isin in enumerate(companies['ISIN']):
         ciq_q_log["Time CIQ request"] = end_time_request_q - end_time_load_q
         ciq_q_log["Time Dump"] = end_time_dump_q - end_time_request_q
         logs[id_q] = {"CIQ" : {"quarter" : ciq_q_log, "daly properties": properties_d,
-                     #"quarter properties": properties_q},
+                     "quarter properties": properties_q},
                      "fields": {}}             
 
 
