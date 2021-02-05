@@ -9,7 +9,7 @@ from modules.apiciq.apicapitaliq import ApiCapitalIQ
 from modules.tables import tables
 
 dbpath = './files/'
-fields = pd.read_excel(dbpath + 'Campos_SyP.xlsx')
+fields = pd.read_excel(dbpath + 'Campos_SyP.xlsx',  engine='openpyxl')
 fields = fields.loc[:, ['Campo_consulta', 'Periodicidad']]
 quarter = fields.loc[fields['Periodicidad'] == 'Trimestral',
                      'Campo_consulta']
