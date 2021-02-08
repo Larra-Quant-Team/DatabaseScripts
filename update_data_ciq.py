@@ -51,6 +51,11 @@ def get_update_properties(asset, last_update_info, fields, type, currency):
             properties[mnemonic] = {"daily": properties_d}                   
     return properties
 
+# Get option (if q parameter is provide, only the quarter fields are updated. Daily field are updated in O.C.)
+option = "daily"
+parameters = sys.argv
+if len(parameters) > 1 and parameters[1] == "q":
+    option = "quarter"
 
 # Create Api object
 api = ApiCapitalIQ()
@@ -96,14 +101,14 @@ initial_date = datetime.today()
 program_start_time = time()
 
 # Get information about last update
-last_update_info = {}
-all_fields = quarter_fields + daily_fields
-broken_mnemonics = ["IQ_EST_REV_DIFF_CIQ", "IQ_SPECIAL_DIV_SHARE", "IQ_INT_BEARING_DEPOSITS", "IQ_SUB_BONDS_NOTES",
-                    "IQ_EST_EBITDA_DIFF_CIQ", "IQ_EST_EPS_DIFF_CIQ"]
-quarter_fields = list(filter(lambda x: not x in broken_mnemonics, quarter_fields))   
-daily_fields = list(filter(lambda x: not x in broken_mnemonics, daily_fields))       
+fields_to_update = daily_fields
+if option == "quarter":
+    fields_to_update = quarter_fields
+print(f"actualizando los campos {option}")
+
+last_update_info = {}   
 initial_last_update_time = time()
-for mnemonic in daily_fields:    
+for mnemonic in fields_to_update:    
     print(f"descagando información del ultimo update de {mnemonic}")
     if mnemonic in broken_mnemonics:
         continue
@@ -116,46 +121,36 @@ print(f"tomo: {time()-initial_last_update_time}")
 for i, isin in enumerate(companies['ISIN']):
     if i > last_i:
         companie_log = {}
-        ciq_q_log = {}
+        ciq_log = {}
         if i % 25 == 0:
             print('{}. Consultando para {}'.format(i, isin))
         companie_info = companies.loc[companies['ISIN'] == isin]
         id_q = companie_info.index.item()
+        
         # Create requests for each instrument
-        properties_q = []
-        '''
-        requests_q = []
-        properties_q = get_update_properties(str(id_q), last_update_info, quarter_fields, "quarter", "Local")
-        requests_q.extend([api.historical_value(isin, mnemonic, properties_q[mnemonic]["quarter"])
-                          for mnemonic in quarter_fields])
-        response_q = api.sendRequest(requests_q)
-        with open(dbpath + 'temp/historical_quarter_update_response_{}.pkl'.format(id_q),
-                  'wb') as file:
-            pkl.dump(response_q, file)
-        '''
-        requests_d = []
-        start_time_load_q = time()
-        properties_d = get_update_properties(str(id_q), last_update_info, daily_fields, "daily",  "Local")
-        end_time_load_q = time()
-        #print(properties)
-        requests_d.extend([api.historical_value(isin, mnemonic, properties_d[mnemonic]["daily"])
-                          for mnemonic in daily_fields])
-        response_d = api.sendRequest(requests_d)
-        end_time_request_q = time()
+        requests = []
+        start_time_load = time()
+        properties = get_update_properties(str(id_q), last_update_info, fields_to_update, option,  "Local")
+        end_time_load = time()
+        requests.extend([api.historical_value(isin, mnemonic, properties[mnemonic][option])
+                        for mnemonic in fields_to_update])
+        response = api.sendRequest(requests)
+        end_time_request = time()
+
         with open(dbpath + 'temp/historical_update_response_{}.pkl'.format(id_q),
                   'wb') as file:
-            pkl.dump(response_d, file)    
+            pkl.dump(response, file)    
         # Save current state
         with open(dbpath + 'temp/save_update_state.pkl', 'wb') as file:
             pkl.dump(i, file)    
-        end_time_dump_q = time()
+        end_time_dump = time()
         # logs
-        ciq_q_log["Time Last Update"] = end_time_load_q - start_time_load_q
-        ciq_q_log["Time CIQ request"] = end_time_request_q - end_time_load_q
-        ciq_q_log["Time Dump"] = end_time_dump_q - end_time_request_q
-        logs[id_q] = {"CIQ" : {"quarter" : ciq_q_log, "daly properties": properties_d,
-                     "quarter properties": properties_q},
-                     "fields": {}}             
+        ciq_log["Time Last Update"] = end_time_load - start_time_load
+        ciq_log["Time CIQ request"] = end_time_request - end_time_load
+        ciq_log["Time Dump"] = end_time_dump- end_time_request
+        logs[id_q] = {"CIQ" : {"quarter" : ciq_log, "properties": properties}, "fields": {}}
+        if id_q == 10:
+            break                        
 
 
 def create_key(company, currency, field):
@@ -190,26 +185,17 @@ for id_q, company in companies.iterrows():
         continue
     if id_q % 25 == 0:
         print('Vamos en el id {}'.format(id_q))
-    '''    
-    with open(dbpath + 'temp/historical_quarter_update_response_{}.pkl'.format(id_q),
-              'rb') as file:
-        response_q = pkl.load(file)
-        if response_q.status_code != 200:
-            logs[id_q]["err"] = ('ID {} tiene status code {} para data quarter \n'
-                    .format(id_q, response_q.status_code))
-        response_q = response_q.json()
-    '''    
      
     with open(dbpath + 'temp/historical_update_response_{}.pkl'.format(id_q),
               'rb') as file:
-        response_d = pkl.load(file)
-        if response_d.status_code != 200:
+        response = pkl.load(file)
+        if response.status_code != 200:
             logs[id_q]["err"] = ('ID {} tiene status code {} para data daily \n'
-                    .format(id_q, response_d.status_code))
-        response_d = response_d.json()
+                    .format(id_q, response.status_code))
+        response = response.json()
     
     df = []
-    for res in [response_d]:
+    for res in [response]:
         for mnemo_data in res['GDSSDKResponse']:
             err = "0"
             field = mnemo_data['Mnemonic']
@@ -250,6 +236,8 @@ for id_q, company in companies.iterrows():
         pkl.dump(id_q, file)   
     with open(dbpath + 'temp/update_logs.json', 'w') as file:
         json.dump(logs, file)   
+    if id_q == 10:
+        break    
 
   
 
@@ -258,7 +246,7 @@ final_date = datetime.today()
 sleep(1)
 
 # Parse log information and send it via mail
-html_parser = HtmlConverter(logs, daily_fields, quarter_fields, program_start_time, program_end_time, initial_date, final_date, companies)
+html_parser = HtmlConverter(logs, option, fields_to_update, program_start_time, program_end_time, initial_date, final_date, companies)
 mail_msg = html_parser.get_print()
 mail_html = html_parser.get_html()
 mailer = Mailer("[Acutalización tabla EquityMaster]", mail_msg, mail_html, "fpaniagua@larrainvial.com")

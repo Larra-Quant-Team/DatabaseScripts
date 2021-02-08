@@ -1,6 +1,6 @@
 class HtmlConverter:
 
-    def __init__(self, logs, daily_fields, quarter_fields, start_time, end_time, initial_date, final_date, companies):
+    def __init__(self, logs, option, fields_to_update, start_time, end_time, initial_date, final_date, companies):
         times_last = [logs[id_q]["CIQ"]["quarter"]["Time Last Update"] for id_q in logs.keys()]
         times_request = [logs[id_q]["CIQ"]["quarter"]["Time CIQ request"] for id_q in logs.keys()]
         times_dump = [logs[id_q]["CIQ"]["quarter"]["Time Dump"] for id_q in logs.keys()]
@@ -8,8 +8,8 @@ class HtmlConverter:
         self.avg_times_last = sum(times_last)/len(times_last)
         self.avg_times_request = sum(times_request)/len(times_request)
         self.avg_times_dump = sum(times_dump)/len(times_dump)
-        self.a_d_fields = len(daily_fields)
-        self.a_q_fields = len(quarter_fields)
+        self.a_fields = len(fields_to_update)
+        self.option = option
         self.total_time = (end_time - start_time)/60
         self.intial_date = initial_date
         self.final_date = final_date
@@ -33,9 +33,7 @@ class HtmlConverter:
 
     def get_print(self):    
         self.calculate_table()
-        mail_msg = f"Se a consultado por {self.a_d_fields + self.a_q_fields} campos, distribuidos entre:\n"
-        mail_msg += f"- {self.a_d_fields} campos diarios.\n"
-        mail_msg += f"- {self.a_q_fields} campos trimestrales.\n"
+        mail_msg = f"Se a consultado por {self.a_fields} campos"
         mail_msg += f"Los tiempos promedios de ejecución corresponden a:\n"
         mail_msg += f"- Tiempo prom. de consulta ultimo registro: {self.avg_times_last}\n"
         mail_msg += f"- Tiempo prom. de consulta a CIQ: {self.avg_times_request}\n"
@@ -54,11 +52,7 @@ class HtmlConverter:
                 Este email se ah generado automáticamente como reporte de la actualización de base de datos mongo
                 ocurrida entre {self.intial_date} y {self.final_date} (UTC). A continuación se encuentra un resumen del 
                 log adjunto. <br>
-                Se ha consultado por {self.a_d_fields + self.a_q_fields} campos, distribuidos entre:<br>
-                <ul>
-                    <li> {self.a_d_fields} campos diarios. </li>
-                    <li> {self.a_q_fields} campos trimestrales. </li>
-                </ul>
+                Se ha consultado por {self.a_fields} campos, con periodicidad <b> {self.option} </b>
                 Los tiempos promedios de ejecución corresponden a:<br> 
                 <ul>    
                     <li> Tiempo prom. de consulta ultimo registro: {self.avg_times_last} </li>
