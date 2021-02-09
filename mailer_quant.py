@@ -8,12 +8,12 @@ import os
 
 class Mailer():
 
-    def __init__(self, subject, body, html, reciber):
+    def __init__(self, subject, body, html, receiver):
         self.subject = subject
         self.body = body
         self.html = html
         self.sender_email = os.environ.get('EMAIL_SENDER')
-        self.receiver_email = reciber
+        self.receiver_email = receiver
         self.password = os.environ.get('EMAIL_PASSWORD')
         self.message = None
 
@@ -57,4 +57,5 @@ class Mailer():
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
             server.login(self.sender_email, self.password)
-            server.sendmail(self.sender_email, reciber, self.text)    
+            server.sendmail(self.sender_email, reciber, self.text)
+  
