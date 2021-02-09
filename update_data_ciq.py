@@ -149,9 +149,7 @@ for i, isin in enumerate(companies['ISIN']):
         ciq_log["Time CIQ request"] = end_time_request - end_time_load
         ciq_log["Time Dump"] = end_time_dump- end_time_request
         logs[id_q] = {"CIQ" : {"quarter" : ciq_log, "properties": properties}, "fields": {}}    
-
-        if id_q == 300:
-            break           
+          
 
 
 def create_key(company, currency, field):
@@ -238,8 +236,6 @@ for id_q, company in companies.iterrows():
         pkl.dump(id_q, file)   
     with open(dbpath + 'temp/update_logs.json', 'w') as file:
         json.dump(logs, file)
-    if id_q == 300:
-        break       
 
   
 
