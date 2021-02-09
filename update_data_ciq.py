@@ -148,7 +148,10 @@ for i, isin in enumerate(companies['ISIN']):
         ciq_log["Time Last Update"] = end_time_load - start_time_load
         ciq_log["Time CIQ request"] = end_time_request - end_time_load
         ciq_log["Time Dump"] = end_time_dump- end_time_request
-        logs[id_q] = {"CIQ" : {"quarter" : ciq_log, "properties": properties}, "fields": {}}              
+        logs[id_q] = {"CIQ" : {"quarter" : ciq_log, "properties": properties}, "fields": {}}    
+
+        if id_q == 300:
+            break           
 
 
 def create_key(company, currency, field):
@@ -181,7 +184,7 @@ except FileNotFoundError:
 for id_q, company in companies.iterrows():
     if id_q < last_id:
         continue
-    if id_q % 25 == 0:
+    if id_q % 1 == 0:
         print('Vamos en el id {}'.format(id_q))
      
     with open(dbpath + 'temp/historical_update_response_{}.pkl'.format(id_q),
@@ -227,13 +230,16 @@ for id_q, company in companies.iterrows():
     
     #print(f"estoy en id: {id_q}")
     #print(df)
-    df = pd.concat(df, axis=1)
-    logs[id_q]["Updated fields"] = len(df.columns)
-    eq.update_values(df, keys)
+    if df:
+        df = pd.concat(df, axis=1)
+        logs[id_q]["Updated fields"] = len(df.columns)
+        eq.update_values(df, keys)
     with open(dbpath + 'temp/save_update_state_load.pkl', 'wb') as file:
         pkl.dump(id_q, file)   
     with open(dbpath + 'temp/update_logs.json', 'w') as file:
-        json.dump(logs, file)   
+        json.dump(logs, file)
+    if id_q == 300:
+        break       
 
   
 
