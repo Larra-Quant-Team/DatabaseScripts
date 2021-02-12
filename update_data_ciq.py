@@ -110,8 +110,6 @@ last_update_info = {}
 initial_last_update_time = time()
 for mnemonic in fields_to_update:    
     print(f"descagando información del ultimo update de {mnemonic}")
-    if mnemonic in broken_mnemonics:
-        continue
     eq = tables.EquityMaster(currency="Local", field=mnemonic)
     last_update_info[mnemonic] = eq.last_update()
 print(f"tomo: {time()-initial_last_update_time}")
@@ -147,7 +145,7 @@ for i, isin in enumerate(companies['ISIN']):
         # logs
         ciq_log["Time Last Update"] = end_time_load - start_time_load
         ciq_log["Time CIQ request"] = end_time_request - end_time_load
-        ciq_log["Time Dump"] = end_time_dump- end_time_request
+        ciq_log["Time Dump"] = end_time_dump - end_time_request
         logs[id_q] = {"CIQ" : {"quarter" : ciq_log, "properties": properties}, "fields": {}}    
           
 
@@ -182,7 +180,7 @@ except FileNotFoundError:
 for id_q, company in companies.iterrows():
     if id_q < last_id:
         continue
-    if id_q % 1 == 0:
+    if id_q % 25 == 0:
         print('Vamos en el id {}'.format(id_q))
      
     with open(dbpath + 'temp/historical_update_response_{}.pkl'.format(id_q),
