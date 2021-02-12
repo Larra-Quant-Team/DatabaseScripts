@@ -230,6 +230,8 @@ for id_q, company in companies.iterrows():
         df = pd.concat(df, axis=1)
         logs[id_q]["Updated fields"] = len(df.columns)
         eq.update_values(df, keys)
+    else:
+        logs[id_q]["Updated fields"] = 0
     with open(dbpath + 'temp/save_update_state_load.pkl', 'wb') as file:
         pkl.dump(id_q, file)   
     with open(dbpath + 'temp/update_logs.json', 'w') as file:

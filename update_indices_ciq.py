@@ -15,7 +15,7 @@ from modules.apiciq.apicapitaliq import ApiCapitalIQ
 from modules.tables import tables
 
 
-
+#IQ_CLOSEPRICE IQ_TOTAL_ASSETS
 eq = tables.EquityMaster(asset="1", currency="Local", field="IQ_CLOSEPRICE")
 keys = eq.get_keys()
 qry = eq.query()
