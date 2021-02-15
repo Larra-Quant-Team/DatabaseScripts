@@ -110,7 +110,7 @@ last_update_info = {}
 initial_last_update_time = time()
 for mnemonic in fields_to_update:    
     print(f"descagando información del ultimo update de {mnemonic}")
-    eq = tables.EquityMaster(currency="Local", field=mnemonic)
+    eq = tables.EquityMaster(currency="USD", field=mnemonic)
     last_update_info[mnemonic] = eq.last_update()
 print(f"tomo: {time()-initial_last_update_time}")
 
@@ -128,7 +128,7 @@ for i, isin in enumerate(companies['ISIN']):
         # Create requests for each instrument
         requests = []
         start_time_load = time()
-        properties = get_update_properties(str(id_q), last_update_info, fields_to_update, option,  "Local")
+        properties = get_update_properties(str(id_q), last_update_info, fields_to_update, option,  "USD")
         end_time_load = time()
         requests.extend([api.historical_value(isin, mnemonic, properties[mnemonic][option])
                         for mnemonic in fields_to_update])
@@ -250,4 +250,5 @@ mail_html = html_parser.get_html()
 mailer = Mailer("[Acutalización tabla EquityMaster]", mail_msg, mail_html, "fpaniagua@larrainvial.com")
 mailer.create_message("./files/temp/update_logs.json", "update_log.json")
 mailer.send_message("fpaniagua@larrainvial.com")
-#mailer.send_message("Aback@larrainvial.com")
+mailer.send_message("aback@larrainvial.com")
+mailer.send_message("moksenberg@larrainvial.com")
