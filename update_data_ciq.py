@@ -9,8 +9,12 @@ import os
 import pandas as pd
 import pickle as pkl
 import sys
+from time import time, sleep
+import json
 
 # local packages
+from mailer_quant import Mailer
+from prettifier import HtmlConverter
 from modules.apiciq.apicapitaliq import ApiCapitalIQ
 from modules.tables import tables
 
@@ -18,16 +22,16 @@ current_dir = os.getcwd()
 os.chdir(current_dir)
 
 
-def get_update_properties(asset, currency, fields):
-    eq = tables.EquityMaster(currency=currency, asset=asset)
-    last_update = eq.last_update()
+def get_update_properties(asset, last_update_info, fields, type, currency):
+    #last_update = last_update_info.loc[last_update_info["asset"] == asset]
     properties = {}
     for mnemonic in fields:
         # In the case mnemonic field has never been updated in the Database, the query start at 2010
         #print(mnemonic)
         start = datetime(2010, 1, 1)
         start_str = start.strftime('%Y-%m-%d')
-        mnemonic_last_update = last_update.loc[last_update["field"] == mnemonic]
+        #print(last_update_info[mnemonic])
+        mnemonic_last_update = last_update_info[mnemonic].loc[last_update_info[mnemonic]["asset"] == asset]
         if mnemonic_last_update.shape[0] > 0:
             start = mnemonic_last_update.last_update.item()
             start_str = start.strftime('%Y-%m-%d')
@@ -37,13 +41,21 @@ def get_update_properties(asset, currency, fields):
         properties_d = {'StartDate': start_str,
                         'EndDate': end_str,
                         'currencyid': currency}
-        properties_q = {'periodtype': 'IQ_CQ'.format(4 *
+        properties_q = {'periodtype': 'IQ_CQ-{}'.format(4 *
                                                         (end.year - start.year)),
                         'metadatatag': 'perioddate',
                         'currencyid': currency}  
-        properties[mnemonic] = {"daily": properties_d, "quarter": properties_q}                   
+        if type == "quarter":
+            properties[mnemonic] = {"quarter": properties_q}    
+        else:           
+            properties[mnemonic] = {"daily": properties_d}                   
     return properties
 
+# Get option (if q parameter is provide, only the quarter fields are updated. Daily field are updated in O.C.)
+option = "daily"
+parameters = sys.argv
+if len(parameters) > 1 and parameters[1] == "q":
+    option = "quarter"
 
 # Create Api object
 api = ApiCapitalIQ()
@@ -67,6 +79,12 @@ daily = fields.loc[fields['Periodicidad'] == 'Diaria',
                    'Campo_consulta']
 daily_fields = daily.tolist()
 quarter_fields = quarter.tolist()
+
+broken_mnemonics = ["IQ_EST_REV_DIFF_CIQ", "IQ_SPECIAL_DIV_SHARE", "IQ_INT_BEARING_DEPOSITS", "IQ_SUB_BONDS_NOTES",
+                    "IQ_EST_EBITDA_DIFF_CIQ", "IQ_EST_EPS_DIFF_CIQ"]
+quarter_fields = list(filter(lambda x: not x in broken_mnemonics, quarter_fields))   
+daily_fields = list(filter(lambda x: not x in broken_mnemonics, daily_fields))  
+
 print("d:", len(daily_fields))
 print("q:", len(quarter_fields))
 
@@ -77,38 +95,59 @@ try:
 except FileNotFoundError:
     last_i = -1
 
+# Create log dictionary to build a json log file
+logs = {}
+initial_date = datetime.today()
+program_start_time = time()
+
+# Get information about last update
+fields_to_update = daily_fields
+if option == "quarter":
+    fields_to_update = quarter_fields
+print(f"actualizando los campos {option}")
+
+last_update_info = {}   
+initial_last_update_time = time()
+for mnemonic in fields_to_update:    
+    print(f"descagando información del ultimo update de {mnemonic}")
+    eq = tables.EquityMaster(currency="USD", field=mnemonic)
+    last_update_info[mnemonic] = eq.last_update()
+print(f"tomo: {time()-initial_last_update_time}")
+
+
 # Download Data from CIQ for all companies
 for i, isin in enumerate(companies['ISIN']):
     if i > last_i:
+        companie_log = {}
+        ciq_log = {}
         if i % 25 == 0:
             print('{}. Consultando para {}'.format(i, isin))
         companie_info = companies.loc[companies['ISIN'] == isin]
         id_q = companie_info.index.item()
-        # Create requests for each instrument
         
-        requests_q = []
-        properties_q = get_update_properties(str(id_q), "Local", quarter_fields)
-        requests_q.extend([api.historical_value(isin, mnemonic, properties_q[mnemonic]["quarter"])
-                          for mnemonic in quarter_fields])
-        response_q = api.sendRequest(requests_q)
-        with open(dbpath + 'temp/historical_quarter_update_response_{}.pkl'.format(id_q),
-                  'wb') as file:
-            pkl.dump(response_q, file)
-            
-        requests_d = []
-        properties_d = get_update_properties(str(id_q), "Local", daily_fields)
-        #print(properties)
-        requests_d.extend([api.historical_value(isin, mnemonic, properties_d[mnemonic]["daily"])
-                          for mnemonic in daily_fields])
-        response_d = api.sendRequest(requests_d)
+        # Create requests for each instrument
+        requests = []
+        start_time_load = time()
+        properties = get_update_properties(str(id_q), last_update_info, fields_to_update, option,  "USD")
+        end_time_load = time()
+        requests.extend([api.historical_value(isin, mnemonic, properties[mnemonic][option])
+                        for mnemonic in fields_to_update])
+        response = api.sendRequest(requests)
+        end_time_request = time()
+
         with open(dbpath + 'temp/historical_update_response_{}.pkl'.format(id_q),
                   'wb') as file:
-            pkl.dump(response_d, file)    
+            pkl.dump(response, file)    
         # Save current state
         with open(dbpath + 'temp/save_update_state.pkl', 'wb') as file:
             pkl.dump(i, file)    
-        break    
-
+        end_time_dump = time()
+        # logs
+        ciq_log["Time Last Update"] = end_time_load - start_time_load
+        ciq_log["Time CIQ request"] = end_time_request - end_time_load
+        ciq_log["Time Dump"] = end_time_dump - end_time_request
+        logs[id_q] = {"CIQ" : {"quarter" : ciq_log, "properties": properties}, "fields": {}}    
+          
 
 
 def create_key(company, currency, field):
@@ -137,37 +176,33 @@ try:
         last_id = pkl.load(file)
 except FileNotFoundError:
     last_id = -1
-logs = ''
+
 for id_q, company in companies.iterrows():
     if id_q < last_id:
         continue
     if id_q % 25 == 0:
         print('Vamos en el id {}'.format(id_q))
-    with open(dbpath + 'temp/historical_quarter_update_response_{}.pkl'.format(id_q),
-              'rb') as file:
-        response_q = pkl.load(file)
-        if response_q.status_code != 200:
-            logs += ('ID {} tiene status code {} para data quarter \n'
-                    .format(id_q, response_q.status_code))
-        response_q = response_q.json()
      
     with open(dbpath + 'temp/historical_update_response_{}.pkl'.format(id_q),
               'rb') as file:
-        response_d = pkl.load(file)
-        if response_d.status_code != 200:
-            logs += ('ID {} tiene status code {} para data daily \n'
-                    .format(id_q, response_d.status_code))
-        response_d = response_d.json()
+        response = pkl.load(file)
+        if response.status_code != 200:
+            logs[id_q]["err"] = ('ID {} tiene status code {} para data daily \n'
+                    .format(id_q, response.status_code))
+        response = response.json()
     
     df = []
-    for res in [response_q, response_d]:
+    for res in [response]:
         for mnemo_data in res['GDSSDKResponse']:
+            err = "0"
             field = mnemo_data['Mnemonic']
             currency = mnemo_data['Properties']['currencyid']
+            msg = ""
             if mnemo_data['ErrMsg'] != '':
-                logs += ('ID {} tiene error en campo {} con currency {}\n'
+                err = "1"
+                msg = ('ID {} tiene error en campo {} con currency {}\n'
                          .format(id_q, field, currency))
-                logs += (f'{mnemo_data["ErrMsg"]} \n')         
+                msg += (f'{mnemo_data["ErrMsg"]} \n')         
                 continue
             rows = [list(x.values())[0] for x in mnemo_data['Rows']]
             if field == 'IQ_FILINGDATE_IS':
@@ -185,12 +220,35 @@ for id_q, company in companies.iterrows():
                 series.name = create_key(company, currency, field)
                 df.append(series)
             else:
-                logs += 'ID {} tiene error en campo {} con currency {}, puede ser "CapabilityNeeded \n'.format(id_q, field, currency)
-    df = pd.concat(df, axis=1)
-    print("se han actualizado {} campos".format(len(df.columns)))
-    eq.update_values(df, keys)
+                err = "1"
+                msg += 'ID {} tiene error en campo {} con currency {}, puede ser "CapabilityNeeded \n'.format(id_q, field, currency)
+            logs[id_q]["fields"][field] = {"msg" : msg, "err": err}
+    
+    #print(f"estoy en id: {id_q}")
+    #print(df)
+    if df:
+        df = pd.concat(df, axis=1)
+        logs[id_q]["Updated fields"] = len(df.columns)
+        eq.update_values(df, keys)
+    else:
+        logs[id_q]["Updated fields"] = 0
     with open(dbpath + 'temp/save_update_state_load.pkl', 'wb') as file:
-        pkl.dump(id_q, file)
-    with open(dbpath + 'temp/update_logs.txt', 'w') as file:
-        file.write(logs)
-    break    
+        pkl.dump(id_q, file)   
+    with open(dbpath + 'temp/update_logs.json', 'w') as file:
+        json.dump(logs, file)
+
+  
+
+program_end_time = time()
+final_date = datetime.today()
+sleep(1)
+
+# Parse log information and send it via mail
+html_parser = HtmlConverter(logs, option, fields_to_update, program_start_time, program_end_time, initial_date, final_date, companies)
+mail_msg = html_parser.get_print()
+mail_html = html_parser.get_html()
+mailer = Mailer("[Acutalización tabla EquityMaster]", mail_msg, mail_html, "fpaniagua@larrainvial.com")
+mailer.create_message("./files/temp/update_logs.json", "update_log.json")
+mailer.send_message("fpaniagua@larrainvial.com")
+mailer.send_message("aback@larrainvial.com")
+mailer.send_message("moksenberg@larrainvial.com")
