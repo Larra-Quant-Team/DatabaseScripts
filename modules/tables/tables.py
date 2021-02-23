@@ -14,9 +14,9 @@ class EquityMaster(_MongoSeries):
     _drop_weekends = True
     _override_boolean_key = ['investable']
 
-class IndicesMaster(_MongoSeries):
-    _name = 'indices_master'
-    _key_ls = ['country', 'currency', 'asset', 'field']
+class MacroMaster(_MongoSeries):
+    _name = 'macro_master'
+    _key_ls = ['country', 'currency', 'instrument', 'source', 'field']
     _drop_weekends = True 
 
 class WebInfoMaster(_MongoSeries):
