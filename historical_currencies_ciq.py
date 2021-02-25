@@ -16,10 +16,10 @@ current_dir = os.getcwd()
 os.chdir(current_dir)
 
 
-def create_key(region, currency, field, source="CIQ"):
+def create_key(region, currency, field, source="CIQ", instrument = "FX_USD"):
     country = region
     currency = currency
-    instrument = "FX_USD"
+    instrument = instrument
     source = source
     field = field
     return '.'.join([country, currency, instrument, source, field])
@@ -38,7 +38,7 @@ macros = pd.read_excel(dbpath + 'Company_Base_Definitivo.xlsx',
                           sheet_name='Macro',  engine='openpyxl')
 macros.set_index('Region', inplace=True)
 macros.sort_index(inplace=True)
-macros = macros.dropna()
+currencies_df = macros.dropna()
 
 start = datetime(2010, 1, 1)
 start_str = start.strftime('%Y-%m-%d')
@@ -50,7 +50,7 @@ properties = {'StartDate': start_str,
 
 logs = ""
 
-for id_q, macro in macros.iterrows():
+for id_q, macro in currencies_df.iterrows():
     requests = []
     ticker = f"{macro.Currency_Id}USD"
     requests.extend([api.historical_value(macro.Currency_Id ,"IQ_CLOSEPRICE", properties)])
