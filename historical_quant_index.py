@@ -11,7 +11,7 @@ import numpy as np
 from modules.apiciq.apicapitaliq import ApiCapitalIQ
 from modules.tables import tables
 
-def create_key(region, currency, field, source="QUANT/CIQ", instrument = "INDEX"):
+def create_key(region, currency, field, source="QUANT/CIQ", instrument="INDEX"):
     country = region
     currency = currency
     instrument = instrument
@@ -22,16 +22,19 @@ def create_key(region, currency, field, source="QUANT/CIQ", instrument = "INDEX"
 
 # median IQ_VALUE_TRADED in the last n days
 def calculate_adtv(value_traded_df, n=90):
-    roller = value_traded_df.rolling(n)
-    adtv = roller.median(skipna=True)
-    adtv = adtv.iloc[n+1:]
+    return value_traded_df.rolling(n).median(skipna=True)
+    #roller = value_traded_df.rolling(n)
+    #adtv = roller.median(skipna=True)
+    #adtv = adtv.iloc[n+1:]
     #adtv = adtv.dropna()
-    return adtv
+    #return adtv
 
-def weigh_market(assets, asset_returns, asset_marketcaps):
-    all_marketcap = sum(asset_marketcaps.values.tolist())
-    weighted_return = sum([asset_returns[id_q].iloc[0].item()*asset_marketcaps[id_q] for id_q in assets])
-    return weighted_return/all_marketcap
+def weight_market(assets, asset_returns, asset_marketcaps):
+    weights = asset_marketcaps.divide(asset_marketcaps.sum(1), axis=0)
+    return asset_returns (asset_returns * weights.shift(1)).sum(1)
+    #all_marketcap = sum(asset_marketcaps.values.tolist())
+    #weighted_return = sum([asset_returns[id_q].iloc[0].item()*asset_marketcaps[id_q] for id_q in assets])
+    #return weighted_return/all_marketcap
 
 def calculate_global_index(local_index, countries_market_caps):
     print("calculating global index")
